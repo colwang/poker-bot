@@ -1,2 +1,2 @@
 # Poker
-Programmed a Poker game with AI
+Play a Poker game with AI
