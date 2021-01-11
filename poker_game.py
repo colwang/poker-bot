@@ -3,8 +3,8 @@ from poker_classes import *
 
 game_deck = deck()
 
-small_blind = input("What is small blind?")
-big_blind = input("What is big blind?")
+small_blind = int(input("What is small blind?"))
+big_blind = int(input("What is big blind?"))
 
 num_human_players = int(input("How many players?"))
 num_AI = int(input("How many AI?"))
@@ -16,7 +16,7 @@ players = list()
 for i in range(num_human_players):
     name = input("Player " + str(i + 1) + ", what is your name?")
     amount_buy_in = input("How much would you like to buy in for?")
-    players.append(player(True, name, amount_buy_in)
+    players.append(player(True, name, amount_buy_in))
 
 for i in range(num_AI):
     AI_name = "AI " + str(i + 1)
