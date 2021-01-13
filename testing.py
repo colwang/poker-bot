@@ -1,13 +1,27 @@
 from poker_classes import *
 
 A_spades = card("A", "Spades")
-print(A_spades)
+K_spades = card("K", "Spades")
+Q_spades = card("Q", "Spades")
+J_spades = card("J", "Spades")
+ten_spades = card("10", "Spades")
 
-game_deck = deck()
-print(game_deck.get_size())
+hand = [A_spades, K_spades, Q_spades, J_spades, ten_spades]
+# print(A_spades == J_hearts)
 
-print(game_deck.card_pile[45:])
-# print ([str(card) for card in game_deck.card_pile[45:]])
+# game_deck = deck()
+# print(game_deck.get_size())
 
-game_deck.shuffle()
-print(game_deck.card_pile[45:])
+# print(game_deck.card_pile[45:])
+# # print ([str(card) for card in game_deck.card_pile[45:]])
+
+# game_deck.shuffle()
+# print(game_deck.card_pile[45:])
+
+spades_A = card("A", "Spades")
+
+if spades_A in hand:
+    print(True)
+
+if card("A", "Spades") in hand:
+    print(True)

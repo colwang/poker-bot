@@ -11,24 +11,30 @@ class card:
 
         if self.suit == "Clubs":
             scoreboard[13] += 1
-        else if self.suit == "Diamonds":
+        elif self.suit == "Diamonds":
             scoreboard[14] += 1
-        else if self.suit == "Hearts":
+        elif self.suit == "Hearts":
             scoreboard[15] += 1
         else:
             scoreboard[16] += 1
 
-        if self.number = "A":
+        if self.number == "A":
             scoreboard[12] += 1
-        else if self.number = "K":
+        elif self.number == "K":
             scoreboard[11] += 1
-        else if self.number = "Q":
+        elif self.number == "Q":
             scoreboard[11] += 1
-        else if self.number = "J":
+        elif self.number == "J":
             scoreboard[11] += 1
         else:
-            index = str(self.number)
+            index = int(self.number) - 2
             scoreboard[index] += 1
+
+    def __eq__(self, other):
+        if self.number == other.number and self.suit == other.suit:
+            return True
+        else:
+            return False
 
     def __str__(self):
         return self.number + " of " + self.suit
@@ -100,12 +106,17 @@ class player:
 
         self.hand = list()
         self.hand_scoreboard = [0] * 17      # Goes 2-10, J, Q, K, A, Clubs, Diamonds, Hearts, Spades
+        self.hand_ranking = [0] * 12         # Goes High Card, Pair, Two Pair, Three of a Kind, Straight, Flush
+                                             # Full House, Four of a Kind, Straight Flush, Royal Flush, then the two card numbers
         self.playing = True
         self.turn_done = False
         self.name = name
+        self.previous_bet = 0
+        self.your_bet = 0
 
     def pay_blind(self, blind):
         self.money_balance -= blind
+        self.previous_bet = blind
 
     def move(self, current_bet, min_raise):
 
@@ -113,7 +124,6 @@ class player:
             
             self.turn_done = False
             valid_move = False
-            bet_raise = current_bet
 
             print()
             print(self.name + ":")
@@ -128,7 +138,8 @@ class player:
 
                 if move.lower() == "c":
                     self.turn_done = True
-                    self.money_balance -= current_bet
+                    self.your_bet = current_bet
+                    self.money_balance -= (self.your_bet - self.previous_bet)
                     valid_move = True
                     if current_bet == 0:
                         print(self.name, "checked.")
@@ -136,18 +147,18 @@ class player:
                         print(self.name, "called.")
 
                 elif move.lower() == "r":
-                    bet_raise = int(input("What would you like to raise it to? "))
+                    self.your_bet = int(input("What would you like to raise it to? "))
 
-                    while (bet_raise - current_bet) < min_raise:
-                        bet_raise = input("Sorry, the minimum raise is " + str(min_raise) + ". What would you like to raise the bet to? ")
+                    while (self.your_bet - current_bet) < min_raise:
+                        self.your_bet = int(input("Sorry, the minimum raise is " + str(min_raise) + ". What would you like to raise the bet to? "))
 
-                    while bet_raise > self.money_balance:
-                        bet_raise = input("Sorry, your balance is currently " + str(self.money_balance) + ". What would you like to raise the bet to?")
+                    while self.your_bet > self.money_balance:
+                        self.your_bet = int(input("Sorry, your balance is currently " + str(self.money_balance) + ". What would you like to raise the bet to?"))
 
-                    self.money_balance -= bet_raise
-                    min_raise = bet_raise - current_bet
+                    self.money_balance -= (self.your_bet - self.previous_bet)
+                    min_raise = self.your_bet - current_bet
                     valid_move = True
-                    print(self.name, "raised to $", bet_raise)
+                    print(self.name, "raised to $", self.your_bet)
 
                 elif move.lower() == "f":
                     self.turn_done = True
@@ -158,9 +169,10 @@ class player:
                 else:
                     print("Please enter a valid move.")
 
-                
+            previous_bet = self.previous_bet
+            self.previous_bet = self.your_bet
 
-            return bet_raise, min_raise, self.turn_done, self.playing
+            return previous_bet, self.your_bet, min_raise, self.turn_done, self.playing
 
     def __repr__(self):
         return self.name
@@ -251,21 +263,31 @@ class game:
             print("Current Bet:", current_bet)
             print("Min Raise:", min_raise)
             print("Current Pot:", self.game_pot)
-            bet_raise, min_raise, turn_done, playing = self.play_order[active_player].move(current_bet, min_raise)
+            previous_bet, bet_raise, min_raise, turn_done, playing = self.play_order[active_player].move(current_bet, min_raise)
             current_bet = bet_raise
             if playing:
-                self.game_pot += current_bet
+                self.game_pot += bet_raise - previous_bet
 
             if not turn_done:
                 preflop_round_done = [False] * (self.total_players)
                 preflop_round_done[index] = True
+                
+                for i in range(self.total_players):
+                    if not self.playing[i]:
+                        preflop_round_done[i] = True
             else:
                 preflop_round_done[index] = turn_done
-            self.playing[index] = playing
+
+            if not playing:
+                self.playing[index] = playing
+                if self.playing.count(True) < 2:
+                    return False
 
         print()
         print("Preflop round done.")
         print()
+
+        return True
 
     def flop(self):
 
@@ -305,10 +327,10 @@ class game:
             print("Current Bet:", current_bet)
             print("Min Raise:", min_raise)
             print("Current Pot:", self.game_pot)
-            bet_raise, min_raise, turn_done, playing = self.play_order[active_player].move(current_bet, min_raise)
+            previous_bet, bet_raise, min_raise, turn_done, playing = self.play_order[active_player].move(current_bet, min_raise)
             current_bet = bet_raise
             if playing:
-                self.game_pot += current_bet
+                self.game_pot += bet_raise - previous_bet
 
             if not turn_done:
                 flop_round_done = [False] * (self.total_players)
@@ -319,10 +341,16 @@ class game:
                         flop_round_done[i] = True
             else:
                 flop_round_done[index] = turn_done
-            self.playing[index] = playing
+            
+            if not playing:
+                self.playing[index] = playing
+                if self.playing.count(True) < 2:
+                    return False
 
         print()
         print("Flop round done.")
+
+        return True
 
 
     def turn_river(self):
@@ -360,10 +388,10 @@ class game:
             print("Current Bet:", current_bet)
             print("Min Raise:", min_raise)
             print("Current Pot:", self.game_pot)
-            bet_raise, min_raise, turn_done, playing = self.play_order[active_player].move(current_bet, min_raise)
+            previous_bet, bet_raise, min_raise, turn_done, playing = self.play_order[active_player].move(current_bet, min_raise)
             current_bet = bet_raise
             if playing:
-                self.game_pot += current_bet
+                self.game_pot += bet_raise - previous_bet
 
             if not turn_done:
                 round_done = [False] * (self.total_players)
@@ -374,13 +402,143 @@ class game:
                         round_done[i] = True
             else:
                 round_done[index] = turn_done
-            self.playing[index] = playing
+            
+            if not playing:
+                self.playing[index] = playing
+                if self.playing.count(True) < 2:
+                    return False
 
         print()
         if len(self.game_board) == 4:
             print("Turn round done.")
         else:
             print("River round done.")
+
+        return True
+
+    def determine_winner(self, reveal):
+
+        if reveal:
+            for player in self.players:
+
+                for card in self.game_board:
+                    player.hand.append(card)
+
+                for i in range(17):
+                    player.hand_scoreboard[i] += self.game_scoreboard[i]
+
+                # check for straight
+                for i in range(9):
+                    if (player.hand_scoreboard[i] > 0 and player.hand_scoreboard[i + 1] > 0 and player.hand_scoreboard[i + 2] > 0 
+                        and player.hand_scoreboard[i + 3] > 0 and player.hand_scoreboard[i + 4] > 0):
+
+                        # check for flush with straight
+                        for j in range(13, 16):
+                            if player.hand_scoreboard[j] >= 5:
+                                if j == 13:
+                                    flush_suit = "Clubs"
+                                elif j == 14:
+                                    flush_suit = "Diamonds"
+                                elif j == 15:
+                                    flush_suit = "Hearts"
+                                elif j == 16:
+                                    flush_suit = "Spades"
+
+                                # check for royal flush
+                                if i == 8:
+                                    royal_flush = [False] * 5
+                                    if card("10", flush_suit) in player.hand:
+                                        royal_flush[0] = True
+                                    if card("J", flush_suit) in player.hand:
+                                        royal_flush[1] = True
+                                    if card("Q", flush_suit) in player.hand:
+                                        royal_flush[2] = True
+                                    if card("K", flush_suit) in player.hand:
+                                        royal_flush[3] = True
+                                    if card("A", flush_suit) in player.hand:
+                                        royal_flush[4] = True
+
+                                    if False not in royal_flush:
+                                        player.hand_ranking[9] = 1
+
+                                # check for straight flush
+                                else:
+                                    straight_flush = [False] * 5
+
+                                    if i + 2 == 9:
+                                        card_3_number = "J"
+                                    else:
+                                        card_3_number = str(i + 4)
+                                    
+                                    if i + 3 == 9:
+                                        card_4_number = "J"
+                                    elif i + 3 == 10:
+                                        card_4_number = "Q"
+                                    else:
+                                        card_4_number = str(i + 5)
+                                    
+                                    if i + 4 == 9:
+                                        card_5_number = "J"
+                                    elif i + 4 == 10:
+                                        card_5_number = "Q"
+                                    elif i + 4 == 11:
+                                        card_5_number = "K"
+                                    else:
+                                        card_5_number = str(i + 6)
+
+                                    if card(str(i + 2), flush_suit) in player.hand:
+                                        straight_flush[0] = True
+                                    if card(str(i + 3), flush_suit) in player.hand:
+                                        straight_flush[1] = True
+                                    if card(card_3_number, flush_suit) in player.hand:
+                                        straight_flush[2] = True
+                                    if card(card_4_number, flush_suit) in player.hand:
+                                        straight_flush[3] = True
+                                    if card(card_5_number, flush_suit) in player.hand:
+                                        straight_flush[4] = True
+
+                                    if False not in straight_flush:
+                                        player.hand_ranking[8] = 1
+
+                        # has only straight
+                        if player.hand_ranking[9] == 0 and player.hand_ranking[8] == 0:
+                            player.hand_ranking[4] = 1
+
+                # check for flush
+                for i in range(13, 16):
+                    if player.hand_scoreboard[j] >= 5:
+                        player.hand_ranking[5] = 1
+
+                pair_count = 0
+                trips = False
+                for i in range(13):
+
+                    # 4 of a kind
+                    if player.hand_scoreboard[i] == 4:
+                        player.hand_ranking[7] = 1
+                    elif player.hand_scoreboard[i] == 3:
+                        trips = True
+                    elif player.hand_scoreboard[i] == 2:
+                        pair_count += 1
+                    
+                if trips and pair_count > 0:
+                    player.hand_ranking[6] = 1
+                elif trips:
+                    player.hand_ranking[3] = 1
+                elif pair_count > 1:
+                    player.hand_ranking[2] = 1
+                elif pair_count > 0:
+                    player.hand_ranking[1] = 1
+                else:
+                    player.hand_ranking[0] = 1
+
+                player.hand_ranking[10] = player.hand[0].number
+                player.hand_ranking[11] = player.hand[1].number
+
+
+        else:
+            index = self.playing.index(True)
+            print(self.players[index].name + " won the round with a pot of $" + str(self.game_pot) + ". Congrats!")
 
 
 
