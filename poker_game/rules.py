@@ -9,11 +9,12 @@ FOUR_OF_A_KIND_BASE_HAND_SCORE = 362
 STRAIGHT_FLUSH_BASE_HAND_SCORE = 375
 ROYAL_FLUSH_HAND_SCORE = 384
 
+
 def rules(board, arr_of_players):
     player_hands = []
     for player in arr_of_players:
         player_hands.append(player.get_hand)
-    
+
     for hand in player_hands:
         inPlay = board + hand
         hand_score = 0
@@ -23,12 +24,12 @@ def rules(board, arr_of_players):
         diamonds = 0
         spades = 0
         repeats = set()
-        count = {}
+        count = [0] * 13
 
         for card in inPlay:
             rank = card.getRank()
             suit = card.getSuit()
-            
+
             # counts number of cards per suit
             if suit == "h":
                 hearts += 1
@@ -38,43 +39,46 @@ def rules(board, arr_of_players):
                 diamonds += 1
             else:
                 spades += 1
-            
-            # checks for repeats and how many of those repeats there are
-            if card in repeats:
-                if rank in count:
-                    count[rank] += 1
-                else:
-                    count[rank] = 2
-            else:
-                repeats.add(rank)
-        
+
+            repeats.add(rank)
+            count[rank] += 1
+
         flush = False
         straight = False
+        quads = False
+        trips = False
+        num_pairs = 0
+
+        for i in range(13):
+            if count[i] == 4:
+                quads = True
+            elif count[i] == 3:
+                trips = True
+            elif count[i] == 2:
+                num_pairs += 1
 
         # checks for flushes
-        if hearts >= 5 or clubs >=5 or diamonds >= 5 or spades >= 5:
+        if hearts >= 5 or clubs >= 5 or diamonds >= 5 or spades >= 5:
             flush = True
-        
+
         # checks for straights
-        cardRanks = []
+        cardRanks = [0] * 14
         for card in repeats:
-            cardRanks.append(getRankValue())
-        if 14 in cardRanks:
-            cardRanks.append(1)
-        cardRanks.sort()
+            cardRanks[card.getRankValue() - 1] = 1
+        if cardRanks[13] == 1:
+            cardRanks[0] = 1
 
         consecutiveCards = 0
-        lastRank = -1
-        straightCards = []
-        for rank in cardRanks:
-            if lastRank + 1 == rank:
+        startOfStraight = 0
+        for i in range(14):
+            if cardRank[i] == 1:
                 consecutiveCards += 1
-                straightCards.append(rank)
             else:
                 consecutiveCards = 0
-                straightCards = []
-            lastRank = rank
-        
+                startOfStraight = i + 1
+        if consecutiveCards >= 5:
+            straight = True
+
         """
         Hand Rankings
         For this, a hearts flush is equivalent to a spades flush
@@ -94,16 +98,11 @@ def rules(board, arr_of_players):
         Total: 384 possible rankings 
         """
 
-        # checks for royal flush
+        # checks for royal and straight flush
         if flush and straight:
             if 10 in straightCards and 11 in straightCards and 12 in straightCards and 13 in straightCards and 14 in straightCards:
                 hand_score = ROYAL_FLUSH_HAND_SCORE
-            
+            else:
+                hand_score = STRAIGHT_FLUSH_BASE_HAND_SCORE + startOfStraight
 
-
-
-        
-
-
-
-
+        # checks for full house
