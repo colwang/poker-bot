@@ -41,21 +41,40 @@ def rules(board, arr_of_players):
                 spades += 1
 
             repeats.add(rank)
-            count[rank] += 1
+            count[rank - 2] += 1
 
         flush = False
         straight = False
         quads = False
         trips = False
         num_pairs = 0
+        firstKeyCard = 0
+        secondKeyCard = 0
+        kicker = -1
 
-        for i in range(13):
+        for i in range(12, -1, -1):
+            # searches for quads
             if count[i] == 4:
                 quads = True
+                firstKeyCard = i
+            # searches for trips
             elif count[i] == 3:
                 trips = True
+                firstKeyCard = i
+            # searches for pairs
             elif count[i] == 2:
                 num_pairs += 1
+                if trips and num_pairs == 1:
+                    secondKeyCard = i
+                elif num_pairs == 1:
+                    firstKeyCard = i
+                elif num_pairs == 2:
+                    secondKeyCard = i
+            # searches for kicker
+            elif count[i] == 1:
+                if kicker == -1:
+                    kicker = i
+                    
 
         # checks for flushes
         if hearts >= 5 or clubs >= 5 or diamonds >= 5 or spades >= 5:
@@ -71,8 +90,11 @@ def rules(board, arr_of_players):
         consecutiveCards = 0
         startOfStraight = 0
         for i in range(14):
-            if cardRank[i] == 1:
+            if cardRank[i] >= 1:
                 consecutiveCards += 1
+            elif consecutiveCards >= 5:
+                straight = True
+                break
             else:
                 consecutiveCards = 0
                 startOfStraight = i + 1
@@ -105,4 +127,33 @@ def rules(board, arr_of_players):
             else:
                 hand_score = STRAIGHT_FLUSH_BASE_HAND_SCORE + startOfStraight
 
+        # checks for quads
+        elif quads:
+            hand_score = FOUR_OF_A_KIND_BASE_HAND_SCORE + firstKeyCard
+
         # checks for full house
+        elif trips and num_pairs >= 1:
+            hand_score = FULL_HOUSE_BASE_HAND_SCORE + 12 * firstKeyCard + secondKeyCard
+        
+        # checks for flush
+        # THIS IS GONNA BE THE TRUE DOOZY
+
+        # checks for straight
+        elif straight:
+            hand_score = STRAIGHT_BASE_HAND_SCORE + startOfStraight
+
+        # checks for trips
+        elif trips:
+            hand_score = THREE_OF_A_KIND_BASE_HAND_SCORE + firstKeyCard
+        
+        # checks for two pairs
+        elif num_pairs >= 2:
+            hand_score = TWO_PAIR_BASE_HAND_SCORE + 12 * firstKeyCard + secondKeyCard
+
+        # checks for one pair
+        elif num_pairs == 1:
+            hand_score = ONE_PAIR_BASE_HAND_SCORE + firstKeyCard
+
+        # checks for high card
+        elif num_pairs == 1:
+            hand_score = HIGH_CARD_BASE_HAND_SCORE + kicker
